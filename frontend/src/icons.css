@@ -1,0 +1,197 @@
+/* ============================================================================
+   MONOCOLOR ICON STYLES
+   ============================================================================ */
+
+/* Icon base styles */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.icon-sm {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-lg {
+  width: 32px;
+  height: 32px;
+}
+
+.icon-xl {
+  width: 48px;
+  height: 48px;
+}
+
+/* SVG Icon base */
+.icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: inherit;
+}
+
+/* Primary color variant */
+.icon-primary {
+  color: var(--primary);
+}
+
+.icon-primary svg {
+  stroke: var(--primary);
+}
+
+/* Success color variant */
+.icon-success {
+  color: var(--success);
+}
+
+.icon-success svg {
+  stroke: var(--success);
+}
+
+/* Warning color variant */
+.icon-warning {
+  color: var(--warning);
+}
+
+.icon-warning svg {
+  stroke: var(--warning);
+}
+
+/* Error color variant */
+.icon-error {
+  color: var(--error);
+}
+
+.icon-error svg {
+  stroke: var(--error);
+}
+
+/* Tertiary/Disabled color variant */
+.icon-tertiary {
+  color: var(--text-tertiary);
+}
+
+.icon-tertiary svg {
+  stroke: var(--text-tertiary);
+}
+
+/* Specific icon definitions using CSS background */
+.icon-soccer::before {
+  content: '⚽';
+  font-size: 20px;
+}
+
+.icon-users::before {
+  content: '👥';
+  font-size: 20px;
+}
+
+.icon-calendar::before {
+  content: '📅';
+  font-size: 20px;
+}
+
+.icon-stadium::before {
+  content: '🏟️';
+  font-size: 20px;
+}
+
+.icon-star::before {
+  content: '⭐';
+  font-size: 20px;
+}
+
+.icon-goalkeeper::before {
+  content: '⚙️';
+  font-size: 20px;
+}
+
+.icon-defender::before {
+  content: '🛡️';
+  font-size: 20px;
+}
+
+.icon-midfielder::before {
+  content: '⚡';
+  font-size: 20px;
+}
+
+.icon-striker::before {
+  content: '🎯';
+  font-size: 20px;
+}
+
+.icon-trash::before {
+  content: '✕';
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.icon-add::before {
+  content: '➕';
+  font-size: 18px;
+}
+
+/* Icon in buttons */
+.button .icon,
+.tab .icon {
+  margin-right: 6px;
+}
+
+.tab .icon {
+  margin-right: 4px;
+}
+
+/* Icon spacing utilities */
+.icon-mr-8 {
+  margin-right: 8px;
+}
+
+.icon-ml-8 {
+  margin-left: 8px;
+}
+
+.icon-mr-12 {
+  margin-right: 12px;
+}
+
+.icon-ml-12 {
+  margin-left: 12px;
+}
+
+/* Loading/Animated icons */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-loading {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive icon sizes */
+@media (max-width: 768px) {
+  .icon-lg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .icon-xl {
+    width: 40px;
+    height: 40px;
+  }
+}

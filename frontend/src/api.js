@@ -1,9 +1,14 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://pachangas-backend.onrender.com/api';
+// Detectar si estamos en producción (Render) o desarrollo (localhost)
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
 const API = axios.create({
-  baseURL: 'https://pachangas-backend.onrender.com/api',
+  baseURL: isProduction 
+    ? 'https://pachangas-backend.onrender.com/api'
+    : 'http://127.0.0.1:8000/api',
 });
+
+console.log('API Base URL:', API.defaults.baseURL);
 
 export default API;

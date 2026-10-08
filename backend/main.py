@@ -397,6 +397,8 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        print(f"DEBUG: Inscribiendo usuario {convocatoria.usuario_id} a partido {partido_id}")
+        
         # Verificar que el partido existe
         cursor.execute("SELECT id FROM partidos WHERE id = %s;", (partido_id,))
         if not cursor.fetchone():
@@ -427,6 +429,8 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
         nueva_convocatoria = cursor.fetchone()
         conn.commit()
         
+        print(f"DEBUG: Convocatoria creada con id {nueva_convocatoria['id']}")
+        
         # Obtener datos completos con info del usuario
         cursor.execute(
             """
@@ -443,6 +447,9 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
         raise
     except Exception as e:
         conn.rollback()
+        print(f"ERROR en crear_convocatoria: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error al inscribir: {str(e)}")
     finally:
         cursor.close()

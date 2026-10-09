@@ -24,7 +24,7 @@ const DEPORTES = {
     tieneModalidad: false,
     equipoA: 'Pareja A',
     equipoB: 'Pareja B',
-    maxJugadoresPorDefecto: 8,
+    maxJugadoresPorDefecto: 4,
     descripcion: 'Partidos de pádel'
   },
   tenis: {
@@ -86,6 +86,7 @@ function App() {
   const [formPartidoAbierto, setFormPartidoAbierto] = useState(false);
   const [deportePartido, setDeportePartido] = useState('futbol');  // NUEVO
   const [modalidadTenis, setModalidadTenis] = useState('1v1');  // NUEVO
+  const [tituloPartido, setTituloPartido] = useState('');  // NUEVO
   const [partidoCampoId, setPartidoCampoId] = useState('');
   const [partidoFecha, setPartidoFecha] = useState('');
   const [partidoHora, setPartidoHora] = useState('');
@@ -94,6 +95,12 @@ function App() {
   const [partidoEquipoA, setPartidoEquipoA] = useState('Equipo A');
   const [partidoEquipoB, setPartidoEquipoB] = useState('Equipo B');
   const [filtroDeporte, setFiltroDeporte] = useState(null);  // NUEVO - null = todos
+  // NUEVOS - para rutas
+  const [rutaOrigen, setRutaOrigen] = useState('');
+  const [rutaDestino, setRutaDestino] = useState('');
+  const [rutaDistancia, setRutaDistancia] = useState('');
+  const [rutaDuracion, setRutaDuracion] = useState('');
+  const [rutaDesnivel, setRutaDesnivel] = useState('');
 
   // Convocatorias
   const [convocatoriasPorPartido, setConvocatoriasPorPartido] = useState({});
@@ -208,8 +215,20 @@ function App() {
   const handleCrearPartido = async (e) => {
     e.preventDefault();
     try {
-      if (!partidoCampoId || !partidoFecha || !partidoHora) {
-        alert('Por favor completa campo, fecha y hora');
+      if (!tituloPartido || !partidoFecha || !partidoHora) {
+        alert('Por favor completa título, fecha y hora');
+        return;
+      }
+      
+      // Validar que tenga campo si es deporte que lo requiere
+      if (DEPORTES[deportePartido].requiereEquipo && !partidoCampoId) {
+        alert('Por favor selecciona un campo');
+        return;
+      }
+      
+      // Validar que tenga ruta si es bicicleta/montaña
+      if (!DEPORTES[deportePartido].requiereEquipo && (!rutaOrigen || !rutaDestino)) {
+        alert('Por favor completa origen y destino de la ruta');
         return;
       }
 
@@ -224,7 +243,8 @@ function App() {
       }
 
       await API.post('/partidos', {
-        campo_id: parseInt(partidoCampoId),
+        campo_id: DEPORTES[deportePartido].requiereEquipo ? parseInt(partidoCampoId) : null,
+        titulo: tituloPartido,
         fecha_hora: fechaHoraISO,
         max_jugadores: maxJugadores,
         precio_total: partidoPrecio ? parseFloat(partidoPrecio) : null,
@@ -233,8 +253,15 @@ function App() {
         modalidad_tenis: deportePartido === 'tenis' ? modalidadTenis : null,
         equipo_a_nombre: DEPORTES[deportePartido].requiereEquipo ? partidoEquipoA : null,
         equipo_b_nombre: DEPORTES[deportePartido].requiereEquipo ? partidoEquipoB : null,
+        ruta_origen: !DEPORTES[deportePartido].requiereEquipo ? rutaOrigen : null,
+        ruta_destino: !DEPORTES[deportePartido].requiereEquipo ? rutaDestino : null,
+        ruta_distancia_km: !DEPORTES[deportePartido].requiereEquipo ? (rutaDistancia ? parseFloat(rutaDistancia) : null) : null,
+        ruta_duracion_minutos: !DEPORTES[deportePartido].requiereEquipo ? (rutaDuracion ? parseInt(rutaDuracion) : null) : null,
+        ruta_desnivel_metros: !DEPORTES[deportePartido].requiereEquipo ? (rutaDesnivel ? parseInt(rutaDesnivel) : null) : null,
       });
 
+      // Reset form
+      setTituloPartido('');
       setPartidoCampoId('');
       setPartidoFecha('');
       setPartidoHora('');
@@ -243,6 +270,11 @@ function App() {
       setPartidoEquipoA(DEPORTES[deportePartido].equipoA);
       setPartidoEquipoB(DEPORTES[deportePartido].equipoB);
       setModalidadTenis('1v1');
+      setRutaOrigen('');
+      setRutaDestino('');
+      setRutaDistancia('');
+      setRutaDuracion('');
+      setRutaDesnivel('');
       setFormPartidoAbierto(false);
       
       cargarPartidos();
@@ -675,16 +707,24 @@ function App() {
                 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label htmlFor="partidoCampo">Campo ({DEPORTES[deportePartido].nombre}) *</label>
-                    <select id="partidoCampo" value={partidoCampoId} onChange={(e) => setPartidoCampoId(e.target.value)} required>
-                      <option value="">Selecciona un campo...</option>
-                      {campos
-                        .filter(c => c.tipo_deporte === deportePartido)
-                        .map((campo) => (
-                          <option key={campo.id} value={campo.id}>{campo.nombre} ({campo.modalidad})</option>
-                        ))}
-                    </select>
+                    <label htmlFor="tituloPartido">Título del Evento *</label>
+                    <input id="tituloPartido" type="text" placeholder="Ej. Partidos de Viernes" value={tituloPartido} onChange={(e) => setTituloPartido(e.target.value)} required />
                   </div>
+                  
+                  {DEPORTES[deportePartido].requiereEquipo && (
+                    <div className="form-group">
+                      <label htmlFor="partidoCampo">Campo ({DEPORTES[deportePartido].nombre}) *</label>
+                      <select id="partidoCampo" value={partidoCampoId} onChange={(e) => setPartidoCampoId(e.target.value)} required>
+                        <option value="">Selecciona un campo...</option>
+                        {campos
+                          .filter(c => c.tipo_deporte === deportePartido)
+                          .map((campo) => (
+                            <option key={campo.id} value={campo.id}>{campo.nombre} ({campo.modalidad})</option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="form-group">
                     <label htmlFor="partidoFecha">Fecha *</label>
                     <input id="partidoFecha" type="date" value={partidoFecha} onChange={(e) => setPartidoFecha(e.target.value)} required />
@@ -693,6 +733,7 @@ function App() {
                     <label htmlFor="partidoHora">Hora *</label>
                     <input id="partidoHora" type="time" value={partidoHora} onChange={(e) => setPartidoHora(e.target.value)} required />
                   </div>
+                  
                   {DEPORTES[deportePartido].tieneModalidad && (
                     <div className="form-group">
                       <label htmlFor="modalidadTenis">Modalidad Tenis</label>
@@ -706,10 +747,12 @@ function App() {
                       </select>
                     </div>
                   )}
+                  
                   <div className="form-group">
                     <label htmlFor="partidoMaxJugadores">Máximo de Participantes</label>
                     <input id="partidoMaxJugadores" type="number" min="2" max="100" value={partidoMaxJugadores} onChange={(e) => setPartidoMaxJugadores(e.target.value)} />
                   </div>
+ 
                   <div className="form-group">
                     <label htmlFor="partidoPrecio">Precio Total (opcional)</label>
                     <input id="partidoPrecio" type="number" step="0.01" min="0" placeholder="Ej. 50.00" value={partidoPrecio} onChange={(e) => setPartidoPrecio(e.target.value)} />
@@ -724,6 +767,31 @@ function App() {
                       <div className="form-group">
                         <label htmlFor="partidoEquipoB">Nombre {DEPORTES[deportePartido].equipoB}</label>
                         <input id="partidoEquipoB" type="text" placeholder={`Ej. ${DEPORTES[deportePartido].equipoB}`} value={partidoEquipoB} onChange={(e) => setPartidoEquipoB(e.target.value)} />
+                      </div>
+                    </>
+                  )}
+
+                  {!DEPORTES[deportePartido].requiereEquipo && (
+                    <>
+                      <div className="form-group">
+                        <label htmlFor="rutaOrigen">Origen de Ruta *</label>
+                        <input id="rutaOrigen" type="text" placeholder="Ej. Plaza Mayor" value={rutaOrigen} onChange={(e) => setRutaOrigen(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="rutaDestino">Destino de Ruta *</label>
+                        <input id="rutaDestino" type="text" placeholder="Ej. Pico del Monte" value={rutaDestino} onChange={(e) => setRutaDestino(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="rutaDistancia">Distancia (km)</label>
+                        <input id="rutaDistancia" type="number" step="0.1" placeholder="Ej. 15.5" value={rutaDistancia} onChange={(e) => setRutaDistancia(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="rutaDuracion">Duración Aproximada (minutos)</label>
+                        <input id="rutaDuracion" type="number" step="1" placeholder="Ej. 120" value={rutaDuracion} onChange={(e) => setRutaDuracion(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="rutaDesnivel">Desnivel Medio (metros)</label>
+                        <input id="rutaDesnivel" type="number" step="1" placeholder="Ej. 250" value={rutaDesnivel} onChange={(e) => setRutaDesnivel(e.target.value)} />
                       </div>
                     </>
                   )}

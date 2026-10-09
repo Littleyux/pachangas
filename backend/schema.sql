@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS partidos (
     id SERIAL PRIMARY KEY,
     campo_id INT REFERENCES campos(id),
     creador_id INT REFERENCES usuarios(id),
+    titulo VARCHAR(200) NOT NULL,
     fecha_hora TIMESTAMP NOT NULL,
     max_jugadores INT DEFAULT 10,
     precio_total DECIMAL(6,2),
@@ -32,6 +33,11 @@ CREATE TABLE IF NOT EXISTS partidos (
     tipo_deporte VARCHAR(50) DEFAULT 'futbol', -- 'futbol', 'padel', 'tenis', 'bicicleta', 'montana'
     equipo_obligatorio BOOLEAN DEFAULT true, -- true si requiere equipos, false si es grupo
     modalidad_tenis VARCHAR(20), -- '1v1' o '2v2', NULL si no es tenis
+    ruta_origen VARCHAR(150), -- Para bicicleta/montana
+    ruta_destino VARCHAR(150), -- Para bicicleta/montana
+    ruta_distancia_km DECIMAL(5,2), -- Para bicicleta/montana
+    ruta_duracion_minutos INT, -- Para bicicleta/montana
+    ruta_desnivel_metros INT, -- Para bicicleta/montana
     estado VARCHAR(20) DEFAULT 'abierto', -- 'abierto', 'completo', 'finalizado', 'cancelado'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

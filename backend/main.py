@@ -32,7 +32,8 @@ class CampoCreate(BaseModel):
 
 # Esquema de validación para crear partido
 class PartidoCreate(BaseModel):
-    campo_id: int
+    campo_id: Optional[int] = None
+    titulo: str  # NUEVO - obligatorio
     fecha_hora: str  # ISO format: "2024-12-15T18:00:00"
     max_jugadores: Optional[int] = 10
     precio_total: Optional[float] = None
@@ -41,6 +42,12 @@ class PartidoCreate(BaseModel):
     tipo_deporte: str = "futbol"  # 'futbol', 'padel', 'tenis', 'bicicleta', 'montana'
     equipo_obligatorio: bool = True  # true si requiere equipos
     modalidad_tenis: Optional[str] = None  # '1v1' o '2v2' si tipo_deporte='tenis'
+    # NUEVOS - para bicicleta/montana
+    ruta_origen: Optional[str] = None
+    ruta_destino: Optional[str] = None
+    ruta_distancia_km: Optional[float] = None
+    ruta_duracion_minutos: Optional[int] = None
+    ruta_desnivel_metros: Optional[int] = None
 
 class PartidoUpdate(BaseModel):
     estado: Optional[Literal["abierto", "completo", "finalizado", "cancelado"]] = None
@@ -292,11 +299,11 @@ def crear_partido(partido: PartidoCreate):
         # Por ahora, creador_id se asigna como 1 (en futuro, vendría del token JWT)
         cursor.execute(
             """
-            INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, tipo_deporte, equipo_obligatorio, modalidad_tenis, estado)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'abierto')
+            INSERT INTO partidos (campo_id, creador_id, titulo, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, tipo_deporte, equipo_obligatorio, modalidad_tenis, ruta_origen, ruta_destino, ruta_distancia_km, ruta_duracion_minutos, ruta_desnivel_metros, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'abierto')
             RETURNING *;
             """,
-            (partido.campo_id, 1, partido.fecha_hora, partido.max_jugadores, partido.precio_total, partido.equipo_a_nombre, partido.equipo_b_nombre, partido.tipo_deporte, partido.equipo_obligatorio, partido.modalidad_tenis)
+            (partido.campo_id, 1, partido.titulo, partido.fecha_hora, partido.max_jugadores, partido.precio_total, partido.equipo_a_nombre, partido.equipo_b_nombre, partido.tipo_deporte, partido.equipo_obligatorio, partido.modalidad_tenis, partido.ruta_origen, partido.ruta_destino, partido.ruta_distancia_km, partido.ruta_duracion_minutos, partido.ruta_desnivel_metros)
         )
         nuevo_partido = cursor.fetchone()
         conn.commit()

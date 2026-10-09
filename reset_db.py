@@ -51,6 +51,7 @@ try:
             id SERIAL PRIMARY KEY,
             campo_id INT REFERENCES campos(id),
             creador_id INT REFERENCES usuarios(id),
+            titulo VARCHAR(200) NOT NULL,
             fecha_hora TIMESTAMP NOT NULL,
             max_jugadores INT DEFAULT 10,
             precio_total DECIMAL(6,2),
@@ -59,6 +60,11 @@ try:
             tipo_deporte VARCHAR(50) DEFAULT 'futbol',
             equipo_obligatorio BOOLEAN DEFAULT true,
             modalidad_tenis VARCHAR(20),
+            ruta_origen VARCHAR(150),
+            ruta_destino VARCHAR(150),
+            ruta_distancia_km DECIMAL(5,2),
+            ruta_duracion_minutos INT,
+            ruta_desnivel_metros INT,
             estado VARCHAR(20) DEFAULT 'abierto',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -107,15 +113,18 @@ try:
 
     # Insertar datos de prueba - Partidos
     partidos_data = [
-        (1, 1, '2024-12-20 18:00:00', 11, 100.00, 'Los Rojos', 'Los Azules', 'futbol', True, None),
-        (2, 2, '2024-12-21 19:00:00', 5, 40.00, 'Parejas A', 'Parejas B', 'padel', True, None),
-        (3, 3, '2024-12-22 17:30:00', 7, 60.00, 'Equipo A', 'Equipo B', 'futbol', True, None),
+        # (campo_id, creador_id, titulo, fecha_hora, max_jugadores, precio, eq_a, eq_b, deporte, req_eq, mod_tenis, origen, destino, dist, dur, desnivel)
+        (1, 1, 'Clásico Viernes', '2024-12-20 18:00:00', 11, 100.00, 'Los Rojos', 'Los Azules', 'futbol', True, None, None, None, None, None, None),
+        (2, 2, 'Pádel Intermedio', '2024-12-21 19:00:00', 4, 40.00, 'Parejas A', 'Parejas B', 'padel', True, None, None, None, None, None, None),
+        (3, 3, 'Amistoso Sabatino', '2024-12-22 17:30:00', 11, 60.00, 'Equipo A', 'Equipo B', 'futbol', True, None, None, None, None, None, None),
+        (None, 4, 'Ruta Sierra Verde', '2024-12-23 08:00:00', 20, None, None, None, 'bicicleta', False, None, 'Plaza Mayor', 'Pico del Fraile', 25.5, 180, 450),
     ]
 
-    for campo_id, creador_id, fecha_hora, max_jugadores, precio, eq_a, eq_b, deporte, req_eq, mod_tenis in partidos_data:
+    for campo_id, creador_id, titulo, fecha_hora, max_jugadores, precio, eq_a, eq_b, deporte, req_eq, mod_tenis, origen, destino, dist, dur, desnivel in partidos_data:
         cursor.execute(
-            "INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, tipo_deporte, equipo_obligatorio, modalidad_tenis) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
-            (campo_id, creador_id, fecha_hora, max_jugadores, precio, eq_a, eq_b, deporte, req_eq, mod_tenis)
+            """INSERT INTO partidos (campo_id, creador_id, titulo, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, tipo_deporte, equipo_obligatorio, modalidad_tenis, ruta_origen, ruta_destino, ruta_distancia_km, ruta_duracion_minutos, ruta_desnivel_metros) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);""",
+            (campo_id, creador_id, titulo, fecha_hora, max_jugadores, precio, eq_a, eq_b, deporte, req_eq, mod_tenis, origen, destino, dist, dur, desnivel)
         )
 
     # Insertar inscripciones de prueba

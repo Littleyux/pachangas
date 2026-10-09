@@ -60,7 +60,7 @@ const DEPORTES = {
   }
 };
 
-function App() {
+function App({ usuario, onLogout }) {
   /* ========== STATE ========== */
   const [activeTab, setActiveTab] = useState('usuarios');
   
@@ -440,6 +440,11 @@ function App() {
             Pachangas
           </h1>
           <p className="text-secondary">Organiza tus partidos de fútbol</p>
+        </div>
+        <div className="user-profile">
+          <span className="user-icon">👤</span>
+          <span className="user-name">{usuario?.nombre || 'Usuario'}</span>
+          <button className="button-icon" onClick={onLogout} title="Cerrar sesión">✕</button>
         </div>
       </header>
 

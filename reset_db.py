@@ -6,8 +6,35 @@ sys.path.insert(0, '/home/alberto/pachangas/backend')
 
 from db import get_db_connection
 from dotenv import load_dotenv
+import bcrypt
 
 load_dotenv('/home/alberto/pachangas/backend/.env')
+
+# Función para hashear password
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def add_passwords_to_existing_users():
+    """Añadir password_hash a usuarios existentes"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Actualizar todos los usuarios con password por defecto
+        password_hash = hash_password('password123')
+        cursor.execute(
+            "UPDATE usuarios SET password_hash = %s WHERE password_hash IS NULL;",
+            (password_hash,)
+        )
+        conn.commit()
+        print(f"✓ {cursor.rowcount} usuarios actualizados con password")
+        return True
+    except Exception as e:
+        print(f"✗ Error al añadir passwords: {str(e)}")
+        conn.rollback()
+        return False
+    finally:
+        cursor.close()
+        conn.close()
 
 print("Reseteando base de datos Pachangas...")
 print("")
@@ -30,6 +57,10 @@ try:
             email VARCHAR(150) UNIQUE NOT NULL,
             posicion_habitual VARCHAR(50),
             nivel DECIMAL(3,1) DEFAULT 5.0,
+            password_hash VARCHAR(255),
+            google_id VARCHAR(150),
+            google_photo_url TEXT,
+            last_login TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -84,19 +115,22 @@ try:
 
     # Insertar datos de prueba - Usuarios
     usuarios_data = [
-        ('Juan García', 'juan@example.com', 'Delantero', 8.5),
-        ('Carlos López', 'carlos@example.com', 'Centrocampista', 7.0),
-        ('Miguel Rodríguez', 'miguel@example.com', 'Defensa', 6.5),
-        ('Antonio Sánchez', 'antonio@example.com', 'Portero', 9.0),
-        ('Pablo Fernández', 'pablo@example.com', 'Delantero', 7.5),
-        ('David Martínez', 'david@example.com', 'Centrocampista', 8.0),
+        ('Juan García', 'juan@example.com', 'Delantero', 8.5, hash_password('password123')),
+        ('Carlos López', 'carlos@example.com', 'Centrocampista', 7.0, hash_password('password123')),
+        ('Miguel Rodríguez', 'miguel@example.com', 'Defensa', 6.5, hash_password('password123')),
+        ('Antonio Sánchez', 'antonio@example.com', 'Portero', 9.0, hash_password('password123')),
+        ('Pablo Fernández', 'pablo@example.com', 'Delantero', 7.5, hash_password('password123')),
+        ('David Martínez', 'david@example.com', 'Centrocampista', 8.0, hash_password('password123')),
     ]
 
-    for nombre, email, posicion, nivel in usuarios_data:
+    for nombre, email, posicion, nivel, password_hash in usuarios_data:
         cursor.execute(
-            "INSERT INTO usuarios (nombre, email, posicion_habitual, nivel) VALUES (%s, %s, %s, %s);",
-            (nombre, email, posicion, nivel)
+            "INSERT INTO usuarios (nombre, email, posicion_habitual, nivel, password_hash) VALUES (%s, %s, %s, %s, %s);",
+            (nombre, email, posicion, nivel, password_hash)
         )
+
+    # Añadir passwords a usuarios existentes (por si acaso)
+    add_passwords_to_existing_users()
 
     # Insertar datos de prueba - Campos
     campos_data = [

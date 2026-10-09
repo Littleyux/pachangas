@@ -5,6 +5,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(150) UNIQUE NOT NULL,
     posicion_habitual VARCHAR(50), -- 'Portero', 'Defensa', 'Centrocampista', 'Delantero'
     nivel DECIMAL(3,1) DEFAULT 5.0,  -- De 1.0 a 10.0
+    password_hash VARCHAR(255), -- Para login con email/password
+    google_id VARCHAR(150), -- Para login con Google
+    google_photo_url TEXT, -- URL de la foto de perfil de Google
+    last_login TIMESTAMP, -- Último login
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

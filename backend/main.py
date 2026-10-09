@@ -686,3 +686,259 @@ def fix_team_names():
     finally:
         cursor.close()
         conn.close()
+from datetime import datetime, timedelta
+import jwt
+import bcrypt
+from fastapi import Depends, Header
+
+# ============================================
+# CONFIGURACIÓN DE JWT
+# ============================================
+SECRET_KEY = "pachangas-secret-key-change-in-production"  # En producción usar variable de entorno
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
+
+# ============================================
+# MODELOS DE AUTENTICACIÓN
+# ============================================
+class UsuarioLogin(BaseModel):
+    email: str
+    password: Optional[str] = None
+    google_token: Optional[str] = None
+
+class UsuarioLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    usuario: dict
+
+# ============================================
+# FUNCIONES DE AUXILIAR DE AUTH
+# ============================================
+def hash_password(password: str) -> str:
+    """Hashear password con bcrypt"""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verificar password contra hash"""
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_access_token(data: dict) -> str:
+    """Crear token JWT"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_token(token: str) -> dict:
+    """Decodificar token JWT"""
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+# ============================================
+# ENDPOINTS DE AUTENTICACIÓN
+# ============================================
+
+@app.post("/api/auth/register", status_code=201)
+def register_usuario(usuario: UsuarioCreate):
+    """Registrar nuevo usuario con email y password"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Verificar si el email ya existe
+        cursor.execute("SELECT id, email, password_hash FROM usuarios WHERE email = %s;", (usuario.email,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            raise HTTPException(status_code=400, detail="El email ya está registrado")
+        
+        # Hashear password
+        password_hash = hash_password("password123")  # Temporal - usar generated password
+        
+        cursor.execute(
+            """
+            INSERT INTO usuarios (nombre, email, posicion_habitual, nivel, password_hash)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, nombre, email, posicion_habitual, nivel, created_at;
+            """,
+            (usuario.nombre, usuario.email, usuario.posicion_habitual, usuario.nivel, password_hash)
+        )
+        nuevo_usuario = cursor.fetchone()
+        conn.commit()
+        
+        # Crear token
+        access_token = create_access_token(data={"sub": str(nuevo_usuario['id'])})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "usuario": {
+                "id": nuevo_usuario['id'],
+                "nombre": nuevo_usuario['nombre'],
+                "email": nuevo_usuario['email']
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al registrar: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.post("/api/auth/login")
+def login_usuario(usuario_login: UsuarioLogin):
+    """Login con email y password"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT id, nombre, email, password_hash FROM usuarios WHERE email = %s;",
+            (usuario_login.email,)
+        )
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        
+        # Verificar password
+        if usuario['password_hash'] is None:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        
+        if not verify_password(usuario_login.password, usuario['password_hash']):
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        
+        # Actualizar último login
+        cursor.execute(
+            "UPDATE usuarios SET last_login = NOW() WHERE id = %s;",
+            (usuario['id'],)
+        )
+        conn.commit()
+        
+        # Crear token
+        access_token = create_access_token(data={"sub": str(usuario['id'])})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "usuario": {
+                "id": usuario['id'],
+                "nombre": usuario['nombre'],
+                "email": usuario['email']
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al login: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.post("/api/auth/google")
+def login_google(google_token: str):
+    """Login con Google OAuth"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # En producción, verificar el token con Google API
+        # Aquí asumimos que el token es válido y extraemos email
+        # Para desarrollo, aceptamos cualquier token con email dummy
+        import json
+        import base64
+        
+        try:
+            # Decodificar payload del JWT de Google
+            payload_parts = google_token.split('.')
+            if len(payload_parts) >= 2:
+                payload = json.loads(base64.urlsafe_b64decode(payload_parts[1] + '=='))
+                email = payload.get('email')
+                name = payload.get('name', '')
+                picture = payload.get('picture', '')
+                
+                if not email:
+                    raise HTTPException(status_code=400, detail="No se pudo extraer email del token de Google")
+            else:
+                raise HTTPException(status_code=400, detail="Token de Google inválido")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Token de Google inválido")
+        
+        # Buscar usuario por google_id o email
+        cursor.execute("SELECT * FROM usuarios WHERE email = %s;", (email,))
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            # Crear nuevo usuario
+            cursor.execute(
+                """
+                INSERT INTO usuarios (nombre, email, google_id, google_photo_url, last_login)
+                VALUES (%s, %s, %s, %s, NOW())
+                RETURNING *;
+                """,
+                (name or email.split('@')[0], email, email, picture)
+            )
+            usuario = cursor.fetchone()
+            conn.commit()
+        
+        # Actualizar último login
+        cursor.execute(
+            "UPDATE usuarios SET last_login = NOW() WHERE id = %s;",
+            (usuario['id'],)
+        )
+        conn.commit()
+        
+        # Crear token
+        access_token = create_access_token(data={"sub": str(usuario['id'])})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "usuario": {
+                "id": usuario['id'],
+                "nombre": usuario['nombre'],
+                "email": usuario['email'],
+                "google_photo_url": usuario.get('google_photo_url')
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al login con Google: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/api/auth/me")
+def obtener_usuario_actual(authorization: Optional[str] = Header(None)):
+    """Obtener información del usuario actual desde el token"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token de autorización no proporcionado")
+    
+    token = authorization.split(" ")[1]
+    
+    try:
+        payload = decode_token(token)
+        usuario_id = int(payload.get("sub"))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT id, nombre, email, posicion_habitual, nivel, google_photo_url, last_login FROM usuarios WHERE id = %s;",
+            (usuario_id,)
+        )
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        return usuario
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()

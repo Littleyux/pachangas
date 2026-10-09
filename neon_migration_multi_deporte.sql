@@ -54,12 +54,19 @@ ALTER TABLE partidos
 ADD COLUMN IF NOT EXISTS ruta_desnivel_metros INT;
 
 -- ============================================
--- PASO 3: OPCIONAL - Hacer campo_id nullable
+-- PASO 3: Agregar columnas de autenticación a tabla USUARIOS
 -- ============================================
--- Si tus partidos de bicicleta/montaña no usan campo_id,
--- descomenta la siguiente línea para permitir NULL:
--- ALTER TABLE partidos 
--- ALTER COLUMN campo_id DROP NOT NULL;
+ALTER TABLE usuarios
+ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+
+ALTER TABLE usuarios
+ADD COLUMN IF NOT EXISTS google_id VARCHAR(150);
+
+ALTER TABLE usuarios
+ADD COLUMN IF NOT EXISTS google_photo_url TEXT;
+
+ALTER TABLE usuarios
+ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
 
 -- ============================================
 -- PASO 4: Actualizar datos existentes
@@ -91,6 +98,13 @@ ORDER BY ordinal_position;
 SELECT column_name, data_type, is_nullable 
 FROM information_schema.columns 
 WHERE table_name = 'partidos' 
+ORDER BY ordinal_position;
+
+-- Ver estructura de tabla USUARIOS (nuevas columnas)
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'usuarios' 
+AND column_name IN ('password_hash', 'google_id', 'google_photo_url', 'last_login')
 ORDER BY ordinal_position;
 
 -- Ver un resumen de datos después de migración

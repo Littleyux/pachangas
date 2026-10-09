@@ -46,11 +46,11 @@ class PartidoUpdate(BaseModel):
 # Esquema de validación para inscripción a partido
 class ConvocatoriaCreate(BaseModel):
     usuario_id: int
-    equipo: Optional[Literal["Equipo A", "Equipo B", "Sin Asignar"]] = "Sin Asignar"
+    equipo: Optional[str] = "Sin Asignar"  # Cambié de Literal a str para aceptar nombres personalizados
     asistencia_confirmada: Optional[bool] = True
 
 class ConvocatoriaUpdate(BaseModel):
-    equipo: Optional[Literal["Equipo A", "Equipo B", "Sin Asignar"]] = None
+    equipo: Optional[str] = None
     asistencia_confirmada: Optional[bool] = None
     pago_realizado: Optional[bool] = None
 

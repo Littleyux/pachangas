@@ -188,6 +188,8 @@ function App() {
   };
 
   const handleInscribirse = async (partidoId) => {
+    console.log('[DEBUG] handleInscribirse llamado', { partidoId, usuarioSeleccionado, equipoSeleccionado });
+    
     if (!usuarioSeleccionado) {
       alert('Por favor selecciona un jugador');
       return;
@@ -197,19 +199,26 @@ function App() {
       return;
     }
 
+    const payload = {
+      usuario_id: parseInt(usuarioSeleccionado),
+      equipo: equipoSeleccionado,
+      asistencia_confirmada: true,
+    };
+    console.log('[DEBUG] Enviando payload:', payload);
+
     try {
-      await API.post(`/partidos/${partidoId}/convocatorias`, {
-        usuario_id: parseInt(usuarioSeleccionado),
-        equipo: equipoSeleccionado,
-        asistencia_confirmada: true,
-      });
+      await API.post(`/partidos/${partidoId}/convocatorias`, payload);
+      console.log('[DEBUG] Inscripción exitosa');
       setUsuarioSeleccionado('');
       setEquipoSeleccionado('Equipo A');
       cargarConvocatorias(partidoId);
     } catch (error) {
-      console.error('Error al inscribirse:', error);
+      console.error('[ERROR] Error al inscribirse:', error);
+      console.error('[ERROR] Response data:', error.response?.data);
       if (error.response?.status === 400) {
         alert('Este jugador ya está inscrito en este partido');
+      } else if (error.response?.status === 422) {
+        alert('Error de validación: ' + (error.response?.data?.detail || 'Datos inválidos'));
       } else {
         alert('Error al inscribirse al partido');
       }

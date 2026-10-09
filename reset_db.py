@@ -41,6 +41,7 @@ try:
             direccion VARCHAR(255),
             tipo_superficie VARCHAR(50),
             modalidad VARCHAR(20),
+            tipo_deporte VARCHAR(50) DEFAULT 'futbol',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -53,6 +54,11 @@ try:
             fecha_hora TIMESTAMP NOT NULL,
             max_jugadores INT DEFAULT 10,
             precio_total DECIMAL(6,2),
+            equipo_a_nombre VARCHAR(100) DEFAULT 'Equipo A',
+            equipo_b_nombre VARCHAR(100) DEFAULT 'Equipo B',
+            tipo_deporte VARCHAR(50) DEFAULT 'futbol',
+            equipo_obligatorio BOOLEAN DEFAULT true,
+            modalidad_tenis VARCHAR(20),
             estado VARCHAR(20) DEFAULT 'abierto',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -101,15 +107,15 @@ try:
 
     # Insertar datos de prueba - Partidos
     partidos_data = [
-        (1, 1, '2024-12-20 18:00:00', 11, 100.00),
-        (2, 2, '2024-12-21 19:00:00', 5, 40.00),
-        (3, 3, '2024-12-22 17:30:00', 7, 60.00),
+        (1, 1, '2024-12-20 18:00:00', 11, 100.00, 'Los Rojos', 'Los Azules', 'futbol', True, None),
+        (2, 2, '2024-12-21 19:00:00', 5, 40.00, 'Parejas A', 'Parejas B', 'padel', True, None),
+        (3, 3, '2024-12-22 17:30:00', 7, 60.00, 'Equipo A', 'Equipo B', 'futbol', True, None),
     ]
 
-    for campo_id, creador_id, fecha_hora, max_jugadores, precio in partidos_data:
+    for campo_id, creador_id, fecha_hora, max_jugadores, precio, eq_a, eq_b, deporte, req_eq, mod_tenis in partidos_data:
         cursor.execute(
-            "INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total) VALUES (%s, %s, %s, %s, %s);",
-            (campo_id, creador_id, fecha_hora, max_jugadores, precio)
+            "INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, tipo_deporte, equipo_obligatorio, modalidad_tenis) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
+            (campo_id, creador_id, fecha_hora, max_jugadores, precio, eq_a, eq_b, deporte, req_eq, mod_tenis)
         )
 
     # Insertar inscripciones de prueba

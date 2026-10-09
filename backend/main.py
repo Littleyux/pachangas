@@ -27,7 +27,8 @@ class CampoCreate(BaseModel):
     nombre: str
     direccion: Optional[str] = None
     tipo_superficie: str
-    modalidad: Optional[Literal["F5", "F7", "F8", "F11"]] = None
+    modalidad: Optional[str] = None  # Ya no es Literal, puede ser cualquier string
+    tipo_deporte: str = "futbol"  # 'futbol', 'padel', 'tenis', 'bicicleta', 'montana'
 
 # Esquema de validación para crear partido
 class PartidoCreate(BaseModel):
@@ -37,6 +38,9 @@ class PartidoCreate(BaseModel):
     precio_total: Optional[float] = None
     equipo_a_nombre: Optional[str] = "Equipo A"
     equipo_b_nombre: Optional[str] = "Equipo B"
+    tipo_deporte: str = "futbol"  # 'futbol', 'padel', 'tenis', 'bicicleta', 'montana'
+    equipo_obligatorio: bool = True  # true si requiere equipos
+    modalidad_tenis: Optional[str] = None  # '1v1' o '2v2' si tipo_deporte='tenis'
 
 class PartidoUpdate(BaseModel):
     estado: Optional[Literal["abierto", "completo", "finalizado", "cancelado"]] = None
@@ -99,13 +103,19 @@ def crear_usuario(usuario: UsuarioCreate):
 
 # ============== ENDPOINTS DE CAMPOS ==============
 
-# Endpoint: Obtener todos los campos
+# Endpoint: Obtener todos los campos (con filtro opcional por deporte)
 @app.get("/api/campos")
-def obtener_campos():
+def obtener_campos(tipo_deporte: Optional[str] = None):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM campos ORDER BY id DESC;")
+        if tipo_deporte:
+            cursor.execute(
+                "SELECT * FROM campos WHERE tipo_deporte = %s ORDER BY id DESC;",
+                (tipo_deporte,)
+            )
+        else:
+            cursor.execute("SELECT * FROM campos ORDER BY id DESC;")
         campos = cursor.fetchall()
         return campos
     except Exception as e:
@@ -141,11 +151,11 @@ def crear_campo(campo: CampoCreate):
     try:
         cursor.execute(
             """
-            INSERT INTO campos (nombre, direccion, tipo_superficie, modalidad)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO campos (nombre, direccion, tipo_superficie, modalidad, tipo_deporte)
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING *;
             """,
-            (campo.nombre, campo.direccion, campo.tipo_superficie, campo.modalidad)
+            (campo.nombre, campo.direccion, campo.tipo_superficie, campo.modalidad, campo.tipo_deporte)
         )
         nuevo_campo = cursor.fetchone()
         conn.commit()
@@ -209,21 +219,34 @@ def eliminar_campo(campo_id: int):
 
 # ============== ENDPOINTS DE PARTIDOS ==============
 
-# Endpoint: Obtener todos los partidos
+# Endpoint: Obtener todos los partidos (con filtro opcional por deporte)
 @app.get("/api/partidos")
-def obtener_partidos():
+def obtener_partidos(tipo_deporte: Optional[str] = None):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(
-            """
-            SELECT p.*, c.nombre as campo_nombre, c.modalidad, u.nombre as creador_nombre
-            FROM partidos p
-            LEFT JOIN campos c ON p.campo_id = c.id
-            LEFT JOIN usuarios u ON p.creador_id = u.id
-            ORDER BY p.fecha_hora DESC;
-            """
-        )
+        if tipo_deporte:
+            cursor.execute(
+                """
+                SELECT p.*, c.nombre as campo_nombre, c.modalidad, u.nombre as creador_nombre
+                FROM partidos p
+                LEFT JOIN campos c ON p.campo_id = c.id
+                LEFT JOIN usuarios u ON p.creador_id = u.id
+                WHERE p.tipo_deporte = %s
+                ORDER BY p.fecha_hora DESC;
+                """,
+                (tipo_deporte,)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT p.*, c.nombre as campo_nombre, c.modalidad, u.nombre as creador_nombre
+                FROM partidos p
+                LEFT JOIN campos c ON p.campo_id = c.id
+                LEFT JOIN usuarios u ON p.creador_id = u.id
+                ORDER BY p.fecha_hora DESC;
+                """
+            )
         partidos = cursor.fetchall()
         return partidos
     except Exception as e:
@@ -269,11 +292,11 @@ def crear_partido(partido: PartidoCreate):
         # Por ahora, creador_id se asigna como 1 (en futuro, vendría del token JWT)
         cursor.execute(
             """
-            INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, estado)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 'abierto')
+            INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, tipo_deporte, equipo_obligatorio, modalidad_tenis, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'abierto')
             RETURNING *;
             """,
-            (partido.campo_id, 1, partido.fecha_hora, partido.max_jugadores, partido.precio_total, partido.equipo_a_nombre, partido.equipo_b_nombre)
+            (partido.campo_id, 1, partido.fecha_hora, partido.max_jugadores, partido.precio_total, partido.equipo_a_nombre, partido.equipo_b_nombre, partido.tipo_deporte, partido.equipo_obligatorio, partido.modalidad_tenis)
         )
         nuevo_partido = cursor.fetchone()
         conn.commit()

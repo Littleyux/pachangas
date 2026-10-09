@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS campos (
     direccion VARCHAR(255),
     tipo_superficie VARCHAR(50), -- 'Césped Artificial', 'Césped Natural', 'Pista'
     modalidad VARCHAR(20),        -- 'F5', 'F7', 'F8', 'F11'
+    tipo_deporte VARCHAR(50) DEFAULT 'futbol', -- 'futbol', 'padel', 'tenis', 'bicicleta', 'montana'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,6 +29,9 @@ CREATE TABLE IF NOT EXISTS partidos (
     precio_total DECIMAL(6,2),
     equipo_a_nombre VARCHAR(100) DEFAULT 'Equipo A',
     equipo_b_nombre VARCHAR(100) DEFAULT 'Equipo B',
+    tipo_deporte VARCHAR(50) DEFAULT 'futbol', -- 'futbol', 'padel', 'tenis', 'bicicleta', 'montana'
+    equipo_obligatorio BOOLEAN DEFAULT true, -- true si requiere equipos, false si es grupo
+    modalidad_tenis VARCHAR(20), -- '1v1' o '2v2', NULL si no es tenis
     estado VARCHAR(20) DEFAULT 'abierto', -- 'abierto', 'completo', 'finalizado', 'cancelado'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

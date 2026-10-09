@@ -3,6 +3,63 @@ import API from './api';
 import './App.css';
 import './icons.css';
 
+// ========== CONFIGURACIÓN DE DEPORTES ==========
+const DEPORTES = {
+  futbol: {
+    nombre: 'Fútbol',
+    icono: '⚽',
+    color: '#0066cc',
+    requiereEquipo: true,
+    tieneModalidad: false,
+    equipoA: 'Equipo A',
+    equipoB: 'Equipo B',
+    maxJugadoresPorDefecto: 22,
+    descripcion: 'Partidos de fútbol'
+  },
+  padel: {
+    nombre: 'Pádel',
+    icono: '🎾',
+    color: '#ff9900',
+    requiereEquipo: true,
+    tieneModalidad: false,
+    equipoA: 'Pareja A',
+    equipoB: 'Pareja B',
+    maxJugadoresPorDefecto: 8,
+    descripcion: 'Partidos de pádel'
+  },
+  tenis: {
+    nombre: 'Tenis',
+    icono: '🎾',
+    color: '#00cc00',
+    requiereEquipo: true,
+    tieneModalidad: true,
+    modalidades: ['1v1', '2v2'],
+    maxJugadoresPorModalidad: { '1v1': 2, '2v2': 4 },
+    equipoA: 'Jugador A',
+    equipoB: 'Jugador B',
+    maxJugadoresPorDefecto: 2,
+    descripcion: 'Tenis individual o parejas'
+  },
+  bicicleta: {
+    nombre: 'Excursión en Bici',
+    icono: '🚴',
+    color: '#ff6600',
+    requiereEquipo: false,
+    tieneModalidad: false,
+    maxJugadoresPorDefecto: 50,
+    descripcion: 'Rutas en bicicleta'
+  },
+  montana: {
+    nombre: 'Salida al Monte',
+    icono: '⛰️',
+    color: '#996633',
+    requiereEquipo: false,
+    tieneModalidad: false,
+    maxJugadoresPorDefecto: 30,
+    descripcion: 'Senderismo en montaña'
+  }
+};
+
 function App() {
   /* ========== STATE ========== */
   const [activeTab, setActiveTab] = useState('usuarios');
@@ -22,10 +79,13 @@ function App() {
   const [campoDireccion, setCampoDireccion] = useState('');
   const [campoSuperficie, setCampoSuperficie] = useState('Césped Artificial');
   const [campoModalidad, setCampoModalidad] = useState('F7');
+  const [campoDeporte, setCampoDeporte] = useState('futbol');  // NUEVO
 
   // Partidos
   const [partidos, setPartidos] = useState([]);
   const [formPartidoAbierto, setFormPartidoAbierto] = useState(false);
+  const [deportePartido, setDeportePartido] = useState('futbol');  // NUEVO
+  const [modalidadTenis, setModalidadTenis] = useState('1v1');  // NUEVO
   const [partidoCampoId, setPartidoCampoId] = useState('');
   const [partidoFecha, setPartidoFecha] = useState('');
   const [partidoHora, setPartidoHora] = useState('');
@@ -33,6 +93,7 @@ function App() {
   const [partidoPrecio, setPartidoPrecio] = useState('');
   const [partidoEquipoA, setPartidoEquipoA] = useState('Equipo A');
   const [partidoEquipoB, setPartidoEquipoB] = useState('Equipo B');
+  const [filtroDeporte, setFiltroDeporte] = useState(null);  // NUEVO - null = todos
 
   // Convocatorias
   const [convocatoriasPorPartido, setConvocatoriasPorPartido] = useState({});
@@ -81,9 +142,13 @@ function App() {
   };
 
   /* ========== CAMPOS FUNCTIONS ========== */
-  const cargarCampos = async () => {
+  const cargarCampos = async (deporte = null) => {
     try {
-      const res = await API.get('/campos');
+      let url = '/campos';
+      if (deporte) {
+        url += `?tipo_deporte=${deporte}`;
+      }
+      const res = await API.get(url);
       setCampos(res.data);
       console.log('Campos cargados:', res.data.length);
     } catch (error) {
@@ -99,11 +164,13 @@ function App() {
         direccion: campoDireccion,
         tipo_superficie: campoSuperficie,
         modalidad: campoModalidad,
+        tipo_deporte: campoDeporte,
       });
       setCampoNombre('');
       setCampoDireccion('');
       setCampoSuperficie('Césped Artificial');
       setCampoModalidad('F7');
+      setCampoDeporte('futbol');
       setFormCampoAbierto(false);
       cargarCampos();
     } catch (error) {
@@ -124,9 +191,13 @@ function App() {
   };
 
   /* ========== PARTIDOS FUNCTIONS ========== */
-  const cargarPartidos = async () => {
+  const cargarPartidos = async (deporte = null) => {
     try {
-      const res = await API.get('/partidos');
+      let url = '/partidos';
+      if (deporte) {
+        url += `?tipo_deporte=${deporte}`;
+      }
+      const res = await API.get(url);
       setPartidos(res.data);
       console.log('Partidos cargados:', res.data.length);
     } catch (error) {
@@ -143,23 +214,35 @@ function App() {
       }
 
       const fechaHoraISO = `${partidoFecha}T${partidoHora}:00`;
+      
+      // Determinar max jugadores según deporte y modalidad
+      let maxJugadores = parseInt(partidoMaxJugadores);
+      if (deportePartido === 'tenis' && modalidadTenis === '1v1') {
+        maxJugadores = 2;
+      } else if (deportePartido === 'tenis' && modalidadTenis === '2v2') {
+        maxJugadores = 4;
+      }
 
       await API.post('/partidos', {
         campo_id: parseInt(partidoCampoId),
         fecha_hora: fechaHoraISO,
-        max_jugadores: parseInt(partidoMaxJugadores),
+        max_jugadores: maxJugadores,
         precio_total: partidoPrecio ? parseFloat(partidoPrecio) : null,
-        equipo_a_nombre: partidoEquipoA,
-        equipo_b_nombre: partidoEquipoB,
+        tipo_deporte: deportePartido,
+        equipo_obligatorio: DEPORTES[deportePartido].requiereEquipo,
+        modalidad_tenis: deportePartido === 'tenis' ? modalidadTenis : null,
+        equipo_a_nombre: DEPORTES[deportePartido].requiereEquipo ? partidoEquipoA : null,
+        equipo_b_nombre: DEPORTES[deportePartido].requiereEquipo ? partidoEquipoB : null,
       });
 
       setPartidoCampoId('');
       setPartidoFecha('');
       setPartidoHora('');
-      setPartidoMaxJugadores(10);
+      setPartidoMaxJugadores(DEPORTES[deportePartido].maxJugadoresPorDefecto);
       setPartidoPrecio('');
-      setPartidoEquipoA('Equipo A');
-      setPartidoEquipoB('Equipo B');
+      setPartidoEquipoA(DEPORTES[deportePartido].equipoA);
+      setPartidoEquipoB(DEPORTES[deportePartido].equipoB);
+      setModalidadTenis('1v1');
       setFormPartidoAbierto(false);
       
       cargarPartidos();
@@ -197,17 +280,19 @@ function App() {
     console.log('[DEBUG] handleInscribirse llamado', { partidoId, usuarioSeleccionado, equipoSeleccionado });
     
     if (!usuarioSeleccionado) {
-      alert('Por favor selecciona un jugador');
+      alert('Por favor selecciona un participante');
       return;
     }
-    if (!equipoSeleccionado) {
+    
+    const partido = partidos.find(p => p.id === partidoId);
+    if (DEPORTES[partido.tipo_deporte]?.requiereEquipo && !equipoSeleccionado) {
       alert('Por favor selecciona un equipo');
       return;
     }
 
     const payload = {
       usuario_id: parseInt(usuarioSeleccionado),
-      equipo: equipoSeleccionado,
+      equipo: DEPORTES[partido.tipo_deporte]?.requiereEquipo ? equipoSeleccionado : null,
       asistencia_confirmada: true,
     };
     console.log('[DEBUG] Enviando payload:', payload);
@@ -217,7 +302,6 @@ function App() {
       console.log('[DEBUG] Inscripción exitosa');
       
       // Resetea los selectores para la próxima inscripción
-      const partido = partidos.find(p => p.id === partidoId);
       setUsuarioSeleccionado('');
       setEquipoSeleccionado(partido?.equipo_a_nombre || 'Equipo A');
       
@@ -455,6 +539,29 @@ function App() {
             </div>
             {formCampoAbierto && (
               <form onSubmit={handleCrearCampo}>
+                <div className="form-group mb-24">
+                  <label>Tipo de Deporte *</label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {Object.entries(DEPORTES).map(([key, deporte]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setCampoDeporte(key)}
+                        style={{
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          border: campoDeporte === key ? '2px solid ' + deporte.color : '1px solid #ccc',
+                          background: campoDeporte === key ? deporte.color + '20' : '#f5f5f5',
+                          cursor: 'pointer',
+                          fontWeight: campoDeporte === key ? 'bold' : 'normal',
+                          fontSize: '14px'
+                        }}
+                      >
+                        {deporte.icono} {deporte.nombre}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid-2">
                   <div className="form-group">
                     <label htmlFor="campNombre">Nombre del Campo *</label>
@@ -504,9 +611,12 @@ function App() {
                 {campos.map((campo) => (
                   <div key={campo.id} className="list-item">
                     <div className="list-item-content">
-                      <div className="list-item-title">{campo.nombre}</div>
+                      <div className="list-item-title">{DEPORTES[campo.tipo_deporte]?.icono} {campo.nombre}</div>
                       {campo.direccion && <div className="list-item-subtitle">📍 {campo.direccion}</div>}
                       <div className="flex-gap-8 mt-16">
+                        <span className="chip" style={{background: DEPORTES[campo.tipo_deporte]?.color || '#999', color: 'white', fontSize: '12px'}}>
+                          {DEPORTES[campo.tipo_deporte]?.nombre || campo.tipo_deporte}
+                        </span>
                         <span className="chip chip-success">{campo.tipo_superficie}</span>
                         <span className="chip chip-primary">⚽ {campo.modalidad}</span>
                       </div>
@@ -532,14 +642,47 @@ function App() {
             </div>
             {formPartidoAbierto && (
               <form onSubmit={handleCrearPartido}>
+                <div className="form-group mb-24">
+                  <label>Tipo de Deporte *</label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {Object.entries(DEPORTES).map(([key, deporte]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          setDeportePartido(key);
+                          setPartidoCampoId('');
+                          setPartidoEquipoA(deporte.equipoA);
+                          setPartidoEquipoB(deporte.equipoB);
+                          setPartidoMaxJugadores(deporte.maxJugadoresPorDefecto);
+                          cargarCampos(key);
+                        }}
+                        style={{
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          border: deportePartido === key ? '2px solid ' + deporte.color : '1px solid #ccc',
+                          background: deportePartido === key ? deporte.color + '20' : '#f5f5f5',
+                          cursor: 'pointer',
+                          fontWeight: deportePartido === key ? 'bold' : 'normal',
+                          fontSize: '14px'
+                        }}
+                      >
+                        {deporte.icono} {deporte.nombre}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
                 <div className="grid-2">
                   <div className="form-group">
-                    <label htmlFor="partidoCampo">Campo *</label>
+                    <label htmlFor="partidoCampo">Campo ({DEPORTES[deportePartido].nombre}) *</label>
                     <select id="partidoCampo" value={partidoCampoId} onChange={(e) => setPartidoCampoId(e.target.value)} required>
                       <option value="">Selecciona un campo...</option>
-                      {campos.map((campo) => (
-                        <option key={campo.id} value={campo.id}>{campo.nombre} ({campo.modalidad})</option>
-                      ))}
+                      {campos
+                        .filter(c => c.tipo_deporte === deportePartido)
+                        .map((campo) => (
+                          <option key={campo.id} value={campo.id}>{campo.nombre} ({campo.modalidad})</option>
+                        ))}
                     </select>
                   </div>
                   <div className="form-group">
@@ -550,25 +693,43 @@ function App() {
                     <label htmlFor="partidoHora">Hora *</label>
                     <input id="partidoHora" type="time" value={partidoHora} onChange={(e) => setPartidoHora(e.target.value)} required />
                   </div>
+                  {DEPORTES[deportePartido].tieneModalidad && (
+                    <div className="form-group">
+                      <label htmlFor="modalidadTenis">Modalidad Tenis</label>
+                      <select id="modalidadTenis" value={modalidadTenis} onChange={(e) => {
+                        setModalidadTenis(e.target.value);
+                        setPartidoMaxJugadores(DEPORTES[deportePartido].maxJugadoresPorModalidad[e.target.value]);
+                      }}>
+                        {DEPORTES[deportePartido].modalidades.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="form-group">
-                    <label htmlFor="partidoMaxJugadores">Máximo de Jugadores</label>
-                    <input id="partidoMaxJugadores" type="number" min="4" max="22" value={partidoMaxJugadores} onChange={(e) => setPartidoMaxJugadores(e.target.value)} />
+                    <label htmlFor="partidoMaxJugadores">Máximo de Participantes</label>
+                    <input id="partidoMaxJugadores" type="number" min="2" max="100" value={partidoMaxJugadores} onChange={(e) => setPartidoMaxJugadores(e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label htmlFor="partidoPrecio">Precio Total (opcional)</label>
                     <input id="partidoPrecio" type="number" step="0.01" min="0" placeholder="Ej. 50.00" value={partidoPrecio} onChange={(e) => setPartidoPrecio(e.target.value)} />
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="partidoEquipoA">Nombre Equipo A</label>
-                    <input id="partidoEquipoA" type="text" placeholder="Ej. Equipo A" value={partidoEquipoA} onChange={(e) => setPartidoEquipoA(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="partidoEquipoB">Nombre Equipo B</label>
-                    <input id="partidoEquipoB" type="text" placeholder="Ej. Equipo B" value={partidoEquipoB} onChange={(e) => setPartidoEquipoB(e.target.value)} />
-                  </div>
+                  
+                  {DEPORTES[deportePartido].requiereEquipo && (
+                    <>
+                      <div className="form-group">
+                        <label htmlFor="partidoEquipoA">Nombre {DEPORTES[deportePartido].equipoA}</label>
+                        <input id="partidoEquipoA" type="text" placeholder={`Ej. ${DEPORTES[deportePartido].equipoA}`} value={partidoEquipoA} onChange={(e) => setPartidoEquipoA(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="partidoEquipoB">Nombre {DEPORTES[deportePartido].equipoB}</label>
+                        <input id="partidoEquipoB" type="text" placeholder={`Ej. ${DEPORTES[deportePartido].equipoB}`} value={partidoEquipoB} onChange={(e) => setPartidoEquipoB(e.target.value)} />
+                      </div>
+                    </>
+                  )}
                 </div>
                 <button type="submit" className="button button-primary mt-24">
-                  <span className="icon icon-add"></span>Crear Partido
+                  <span className="icon icon-add"></span>Crear {DEPORTES[deportePartido].nombre}
                 </button>
               </form>
             )}
@@ -579,6 +740,48 @@ function App() {
               <h2>Partidos Programados</h2>
               <span className="card-badge">{partidos.length} partidos</span>
             </div>
+            
+            {/* Filtro por deporte */}
+            <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '0 0 16px 0' }}>
+              <button 
+                onClick={() => {
+                  setFiltroDeporte(null);
+                  cargarPartidos();
+                }}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: filtroDeporte === null ? '2px solid #333' : '1px solid #ccc',
+                  background: filtroDeporte === null ? '#f0f0f0' : '#fff',
+                  cursor: 'pointer',
+                  fontWeight: filtroDeporte === null ? 'bold' : 'normal',
+                  fontSize: '13px'
+                }}
+              >
+                Todos
+              </button>
+              {Object.entries(DEPORTES).map(([key, deporte]) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setFiltroDeporte(key);
+                    cargarPartidos(key);
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: filtroDeporte === key ? '2px solid ' + deporte.color : '1px solid #ccc',
+                    background: filtroDeporte === key ? deporte.color + '20' : '#fff',
+                    cursor: 'pointer',
+                    fontWeight: filtroDeporte === key ? 'bold' : 'normal',
+                    fontSize: '13px'
+                  }}
+                >
+                  {deporte.icono} {deporte.nombre}
+                </button>
+              ))}
+            </div>
+
             {partidos.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📅</div>
@@ -590,11 +793,14 @@ function App() {
                   <div key={partido.id}>
                     <div className="list-item" onClick={() => abrirDetallesPartido(partido.id)} style={{ cursor: 'pointer' }}>
                       <div className="list-item-content">
-                        <div className="list-item-title">{partido.campo_nombre} - {partido.modalidad}</div>
+                        <div className="list-item-title">{DEPORTES[partido.tipo_deporte]?.icono} {partido.campo_nombre} - {partido.modalidad}</div>
                         <div className="list-item-subtitle">🕐 {formatearFecha(partido.fecha_hora)}</div>
                         <div className="flex-gap-8 mt-16">
+                          <span className="chip" style={{background: DEPORTES[partido.tipo_deporte]?.color || '#999', color: 'white', fontSize: '12px'}}>
+                            {DEPORTES[partido.tipo_deporte]?.nombre || partido.tipo_deporte}
+                          </span>
                           <span className={`chip ${getEstadoColor(partido.estado)}`}>{getEstadoLabel(partido.estado)}</span>
-                          <span className="chip chip-secondary">👥 {partido.max_jugadores} jugadores</span>
+                          <span className="chip chip-secondary">👥 {partido.max_jugadores} {DEPORTES[partido.tipo_deporte]?.requiereEquipo ? 'jugadores' : 'participantes'}</span>
                           {partido.precio_total && <span className="chip chip-secondary">💰 €{partido.precio_total.toFixed(2)}</span>}
                         </div>
                       </div>
@@ -611,27 +817,32 @@ function App() {
                         </div>
 
                         <div className="form-group mb-24">
-                          <label>Selecciona un jugador y equipo:</label>
+                          <label>Selecciona un participante{DEPORTES[partido.tipo_deporte]?.requiereEquipo ? ' y equipo' : ''}:</label>
                           <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                             <select value={usuarioSeleccionado} onChange={(e) => setUsuarioSeleccionado(e.target.value)} style={{ flex: 1, minWidth: '150px', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                              <option value="">-- Jugador --</option>
+                              <option value="">-- Participante --</option>
                               {usuarios.map((u) => (
                                 <option key={u.id} value={u.id}>{u.nombre} - Nivel {u.nivel}</option>
                               ))}
                             </select>
-                            <select value={equipoSeleccionado} onChange={(e) => setEquipoSeleccionado(e.target.value)} style={{ flex: 1, minWidth: '120px', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                              <option value={partido.equipo_a_nombre || 'Equipo A'}>{partido.equipo_a_nombre || 'Equipo A'}</option>
-                              <option value={partido.equipo_b_nombre || 'Equipo B'}>{partido.equipo_b_nombre || 'Equipo B'}</option>
-                            </select>
+                            {DEPORTES[partido.tipo_deporte]?.requiereEquipo && (
+                              <select value={equipoSeleccionado} onChange={(e) => setEquipoSeleccionado(e.target.value)} style={{ flex: 1, minWidth: '120px', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                                <option value={partido.equipo_a_nombre || 'Equipo A'}>{partido.equipo_a_nombre || 'Equipo A'}</option>
+                                <option value={partido.equipo_b_nombre || 'Equipo B'}>{partido.equipo_b_nombre || 'Equipo B'}</option>
+                              </select>
+                            )}
                             <button className="button button-primary" onClick={() => handleInscribirse(partido.id)} style={{ whiteSpace: 'nowrap' }}>Inscribirse</button>
                           </div>
                         </div>
 
                         <div>
-                          <h4 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>Inscritos ({(convocatoriasPorPartido[partido.id] || []).length})</h4>
+                          <h4 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>
+                            {DEPORTES[partido.tipo_deporte]?.requiereEquipo ? 'Inscritos' : 'Participantes'} ({(convocatoriasPorPartido[partido.id] || []).length})
+                          </h4>
                           {(convocatoriasPorPartido[partido.id] || []).length === 0 ? (
                             <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>Sin inscritos</p>
-                          ) : (
+                          ) : DEPORTES[partido.tipo_deporte]?.requiereEquipo ? (
+                            // Mostrar 2 columnas para deportes con equipos
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
                               {/* Equipo A */}
                               <div>
@@ -690,6 +901,25 @@ function App() {
                                   )}
                                 </div>
                               </div>
+                            </div>
+                          ) : (
+                            // Mostrar 1 columna para deportes sin equipos
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {(convocatoriasPorPartido[partido.id] || []).map((conv) => (
+                                <div key={conv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '500', fontSize: '14px' }}>{conv.nombre}</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{conv.posicion_habitual} • ⭐ {conv.nivel}</div>
+                                  </div>
+                                  <button
+                                    style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', padding: '4px', color: 'var(--error)' }}
+                                    onClick={() => handleDesinscribirse(partido.id, conv.usuario_id)}
+                                    title="Desapuntarse"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>

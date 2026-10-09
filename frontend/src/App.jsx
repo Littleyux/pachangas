@@ -9,6 +9,7 @@ function App() {
   
   // Usuarios
   const [usuarios, setUsuarios] = useState([]);
+  const [formUsuarioAbierto, setFormUsuarioAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [posicion, setPosicion] = useState('Centrocampista');
@@ -16,6 +17,7 @@ function App() {
 
   // Campos
   const [campos, setCampos] = useState([]);
+  const [formCampoAbierto, setFormCampoAbierto] = useState(false);
   const [campoNombre, setCampoNombre] = useState('');
   const [campoDireccion, setCampoDireccion] = useState('');
   const [campoSuperficie, setCampoSuperficie] = useState('Césped Artificial');
@@ -23,6 +25,7 @@ function App() {
 
   // Partidos
   const [partidos, setPartidos] = useState([]);
+  const [formPartidoAbierto, setFormPartidoAbierto] = useState(false);
   const [partidoCampoId, setPartidoCampoId] = useState('');
   const [partidoFecha, setPartidoFecha] = useState('');
   const [partidoHora, setPartidoHora] = useState('');
@@ -69,6 +72,7 @@ function App() {
       setEmail('');
       setPosicion('Centrocampista');
       setNivel(5.0);
+      setFormUsuarioAbierto(false);
       cargarUsuarios();
     } catch (error) {
       console.error('Error al crear usuario:', error);
@@ -100,6 +104,7 @@ function App() {
       setCampoDireccion('');
       setCampoSuperficie('Césped Artificial');
       setCampoModalidad('F7');
+      setFormCampoAbierto(false);
       cargarCampos();
     } catch (error) {
       console.error('Error al crear campo:', error);
@@ -155,6 +160,7 @@ function App() {
       setPartidoPrecio('');
       setPartidoEquipoA('Equipo A');
       setPartidoEquipoB('Equipo B');
+      setFormPartidoAbierto(false);
       
       cargarPartidos();
     } catch (error) {
@@ -364,37 +370,42 @@ function App() {
         {/* USUARIOS TAB */}
         <div className={`tab-content ${activeTab === 'usuarios' ? 'active' : ''}`}>
           <div className="card mb-24">
-            <div className="card-header">
+            <div className="card-header" style={{ cursor: 'pointer' }} onClick={() => setFormUsuarioAbierto(!formUsuarioAbierto)}>
               <h2>Registrar Nuevo Jugador</h2>
+              <span style={{ fontSize: '20px', transition: 'transform 0.3s' }}>
+                {formUsuarioAbierto ? '▼' : '▶'}
+              </span>
             </div>
-            <form onSubmit={handleCrearUsuario}>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label htmlFor="nombre">Nombre Completo *</label>
-                  <input id="nombre" type="text" placeholder="Ej. Juan García" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+            {formUsuarioAbierto && (
+              <form onSubmit={handleCrearUsuario}>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label htmlFor="nombre">Nombre Completo *</label>
+                    <input id="nombre" type="text" placeholder="Ej. Juan García" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="email">Correo Electrónico *</label>
+                    <input id="email" type="email" placeholder="ejemplo@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="posicion">Posición Habitual *</label>
+                    <select id="posicion" value={posicion} onChange={(e) => setPosicion(e.target.value)}>
+                      <option value="Portero">⚙️ Portero</option>
+                      <option value="Defensa">🛡️ Defensa</option>
+                      <option value="Centrocampista">⚡ Centrocampista</option>
+                      <option value="Delantero">🎯 Delantero</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="nivel">Nivel de Juego (1.0 - 10.0) *</label>
+                    <input id="nivel" type="number" step="0.5" min="1" max="10" value={nivel} onChange={(e) => setNivel(e.target.value)} />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="email">Correo Electrónico *</label>
-                  <input id="email" type="email" placeholder="ejemplo@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="posicion">Posición Habitual *</label>
-                  <select id="posicion" value={posicion} onChange={(e) => setPosicion(e.target.value)}>
-                    <option value="Portero">⚙️ Portero</option>
-                    <option value="Defensa">🛡️ Defensa</option>
-                    <option value="Centrocampista">⚡ Centrocampista</option>
-                    <option value="Delantero">🎯 Delantero</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="nivel">Nivel de Juego (1.0 - 10.0) *</label>
-                  <input id="nivel" type="number" step="0.5" min="1" max="10" value={nivel} onChange={(e) => setNivel(e.target.value)} />
-                </div>
-              </div>
-              <button type="submit" className="button button-primary mt-24">
-                <span className="icon icon-add"></span>Añadir Jugador
-              </button>
-            </form>
+                <button type="submit" className="button button-primary mt-24">
+                  <span className="icon icon-add"></span>Añadir Jugador
+                </button>
+              </form>
+            )}
           </div>
 
           <div className="card">
@@ -436,41 +447,46 @@ function App() {
         {/* CAMPOS TAB */}
         <div className={`tab-content ${activeTab === 'campos' ? 'active' : ''}`}>
           <div className="card mb-24">
-            <div className="card-header">
+            <div className="card-header" style={{ cursor: 'pointer' }} onClick={() => setFormCampoAbierto(!formCampoAbierto)}>
               <h2>Registrar Nuevo Campo</h2>
+              <span style={{ fontSize: '20px', transition: 'transform 0.3s' }}>
+                {formCampoAbierto ? '▼' : '▶'}
+              </span>
             </div>
-            <form onSubmit={handleCrearCampo}>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label htmlFor="campNombre">Nombre del Campo *</label>
-                  <input id="campNombre" type="text" placeholder="Ej. Polideportivo Municipal" value={campoNombre} onChange={(e) => setCampoNombre(e.target.value)} required />
+            {formCampoAbierto && (
+              <form onSubmit={handleCrearCampo}>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label htmlFor="campNombre">Nombre del Campo *</label>
+                    <input id="campNombre" type="text" placeholder="Ej. Polideportivo Municipal" value={campoNombre} onChange={(e) => setCampoNombre(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="campDireccion">Dirección</label>
+                    <input id="campDireccion" type="text" placeholder="Ej. Calle Principal, 123" value={campoDireccion} onChange={(e) => setCampoDireccion(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="campSuperficie">Tipo de Superficie *</label>
+                    <select id="campSuperficie" value={campoSuperficie} onChange={(e) => setCampoSuperficie(e.target.value)}>
+                      <option value="Césped Natural">🌱 Césped Natural</option>
+                      <option value="Césped Artificial">🟢 Césped Artificial</option>
+                      <option value="Pista">🔵 Pista</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="campModalidad">Modalidad *</label>
+                    <select id="campModalidad" value={campoModalidad} onChange={(e) => setCampoModalidad(e.target.value)}>
+                      <option value="F5">⚽ F5</option>
+                      <option value="F7">⚽ F7</option>
+                      <option value="F8">⚽ F8</option>
+                      <option value="F11">⚽ F11</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="campDireccion">Dirección</label>
-                  <input id="campDireccion" type="text" placeholder="Ej. Calle Principal, 123" value={campoDireccion} onChange={(e) => setCampoDireccion(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="campSuperficie">Tipo de Superficie *</label>
-                  <select id="campSuperficie" value={campoSuperficie} onChange={(e) => setCampoSuperficie(e.target.value)}>
-                    <option value="Césped Natural">🌱 Césped Natural</option>
-                    <option value="Césped Artificial">🟢 Césped Artificial</option>
-                    <option value="Pista">🔵 Pista</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="campModalidad">Modalidad *</label>
-                  <select id="campModalidad" value={campoModalidad} onChange={(e) => setCampoModalidad(e.target.value)}>
-                    <option value="F5">⚽ F5</option>
-                    <option value="F7">⚽ F7</option>
-                    <option value="F8">⚽ F8</option>
-                    <option value="F11">⚽ F11</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" className="button button-primary mt-24">
-                <span className="icon icon-add"></span>Añadir Campo
-              </button>
-            </form>
+                <button type="submit" className="button button-primary mt-24">
+                  <span className="icon icon-add"></span>Añadir Campo
+                </button>
+              </form>
+            )}
           </div>
 
           <div className="card">
@@ -508,49 +524,54 @@ function App() {
         {/* PARTIDOS TAB */}
         <div className={`tab-content ${activeTab === 'partidos' ? 'active' : ''}`}>
           <div className="card mb-24">
-            <div className="card-header">
+            <div className="card-header" style={{ cursor: 'pointer' }} onClick={() => setFormPartidoAbierto(!formPartidoAbierto)}>
               <h2>Crear Nuevo Partido</h2>
+              <span style={{ fontSize: '20px', transition: 'transform 0.3s' }}>
+                {formPartidoAbierto ? '▼' : '▶'}
+              </span>
             </div>
-            <form onSubmit={handleCrearPartido}>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label htmlFor="partidoCampo">Campo *</label>
-                  <select id="partidoCampo" value={partidoCampoId} onChange={(e) => setPartidoCampoId(e.target.value)} required>
-                    <option value="">Selecciona un campo...</option>
-                    {campos.map((campo) => (
-                      <option key={campo.id} value={campo.id}>{campo.nombre} ({campo.modalidad})</option>
-                    ))}
-                  </select>
+            {formPartidoAbierto && (
+              <form onSubmit={handleCrearPartido}>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label htmlFor="partidoCampo">Campo *</label>
+                    <select id="partidoCampo" value={partidoCampoId} onChange={(e) => setPartidoCampoId(e.target.value)} required>
+                      <option value="">Selecciona un campo...</option>
+                      {campos.map((campo) => (
+                        <option key={campo.id} value={campo.id}>{campo.nombre} ({campo.modalidad})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="partidoFecha">Fecha *</label>
+                    <input id="partidoFecha" type="date" value={partidoFecha} onChange={(e) => setPartidoFecha(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="partidoHora">Hora *</label>
+                    <input id="partidoHora" type="time" value={partidoHora} onChange={(e) => setPartidoHora(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="partidoMaxJugadores">Máximo de Jugadores</label>
+                    <input id="partidoMaxJugadores" type="number" min="4" max="22" value={partidoMaxJugadores} onChange={(e) => setPartidoMaxJugadores(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="partidoPrecio">Precio Total (opcional)</label>
+                    <input id="partidoPrecio" type="number" step="0.01" min="0" placeholder="Ej. 50.00" value={partidoPrecio} onChange={(e) => setPartidoPrecio(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="partidoEquipoA">Nombre Equipo A</label>
+                    <input id="partidoEquipoA" type="text" placeholder="Ej. Equipo A" value={partidoEquipoA} onChange={(e) => setPartidoEquipoA(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="partidoEquipoB">Nombre Equipo B</label>
+                    <input id="partidoEquipoB" type="text" placeholder="Ej. Equipo B" value={partidoEquipoB} onChange={(e) => setPartidoEquipoB(e.target.value)} />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="partidoFecha">Fecha *</label>
-                  <input id="partidoFecha" type="date" value={partidoFecha} onChange={(e) => setPartidoFecha(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="partidoHora">Hora *</label>
-                  <input id="partidoHora" type="time" value={partidoHora} onChange={(e) => setPartidoHora(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="partidoMaxJugadores">Máximo de Jugadores</label>
-                  <input id="partidoMaxJugadores" type="number" min="4" max="22" value={partidoMaxJugadores} onChange={(e) => setPartidoMaxJugadores(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="partidoPrecio">Precio Total (opcional)</label>
-                  <input id="partidoPrecio" type="number" step="0.01" min="0" placeholder="Ej. 50.00" value={partidoPrecio} onChange={(e) => setPartidoPrecio(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="partidoEquipoA">Nombre Equipo A</label>
-                  <input id="partidoEquipoA" type="text" placeholder="Ej. Equipo A" value={partidoEquipoA} onChange={(e) => setPartidoEquipoA(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="partidoEquipoB">Nombre Equipo B</label>
-                  <input id="partidoEquipoB" type="text" placeholder="Ej. Equipo B" value={partidoEquipoB} onChange={(e) => setPartidoEquipoB(e.target.value)} />
-                </div>
-              </div>
-              <button type="submit" className="button button-primary mt-24">
-                <span className="icon icon-add"></span>Crear Partido
-              </button>
-            </form>
+                <button type="submit" className="button button-primary mt-24">
+                  <span className="icon icon-add"></span>Crear Partido
+                </button>
+              </form>
+            )}
           </div>
 
           <div className="card">

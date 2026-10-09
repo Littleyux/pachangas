@@ -557,3 +557,102 @@ def actualizar_convocatoria(partido_id: int, usuario_id: int, convocatoria: Conv
     finally:
         cursor.close()
         conn.close()
+
+
+# ========== ADMIN ENDPOINTS ==========
+
+# Endpoint: Limpiar nombres de equipos en convocatorias (arreglar valores por defecto)
+@app.post("/api/admin/fix-team-names")
+def fix_team_names():
+    """
+    Arregla convocatorias que tienen 'Equipo A' o 'Equipo B' como valores por defecto,
+    cuando deberían tener los nombres custom del partido.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        print("\n" + "="*60)
+        print("INICIANDO LIMPIEZA DE NOMBRES DE EQUIPOS")
+        print("="*60)
+        
+        # Obtener todos los partidos con nombres custom
+        cursor.execute("""
+            SELECT id, equipo_a_nombre, equipo_b_nombre 
+            FROM partidos 
+            WHERE equipo_a_nombre IS NOT NULL 
+            OR equipo_b_nombre IS NOT NULL;
+        """)
+        partidos = cursor.fetchall()
+        print(f"\n[1] Encontrados {len(partidos)} partidos con nombres custom")
+        
+        total_fixes = 0
+        fixes_per_partido = {}
+        
+        for partido_data in partidos:
+            if isinstance(partido_data, dict):
+                partido_id = partido_data['id']
+                equipo_a = partido_data['equipo_a_nombre']
+                equipo_b = partido_data['equipo_b_nombre']
+            else:
+                partido_id = partido_data[0]
+                equipo_a = partido_data[1]
+                equipo_b = partido_data[2]
+            
+            # Verificar cuántas convocatorias tienen valores por defecto
+            cursor.execute("""
+                SELECT COUNT(*) as count
+                FROM convocatorias
+                WHERE partido_id = %s AND (equipo = 'Equipo A' OR equipo = 'Equipo B');
+            """, (partido_id,))
+            
+            result = cursor.fetchone()
+            count_wrong = result['count'] if isinstance(result, dict) else result[0]
+            
+            if count_wrong > 0:
+                print(f"\n   📋 Partido {partido_id}:")
+                print(f"      Teams: '{equipo_a}' vs '{equipo_b}'")
+                print(f"      Convocatorias a arreglar: {count_wrong}")
+                
+                # Arreglar Equipo A
+                cursor.execute("""
+                    UPDATE convocatorias
+                    SET equipo = %s
+                    WHERE partido_id = %s AND equipo = 'Equipo A';
+                """, (equipo_a, partido_id))
+                fixes_a = cursor.rowcount
+                
+                # Arreglar Equipo B
+                cursor.execute("""
+                    UPDATE convocatorias
+                    SET equipo = %s
+                    WHERE partido_id = %s AND equipo = 'Equipo B';
+                """, (equipo_b, partido_id))
+                fixes_b = cursor.rowcount
+                
+                fixes_this = fixes_a + fixes_b
+                total_fixes += fixes_this
+                fixes_per_partido[partido_id] = fixes_this
+                print(f"      ✓ {fixes_this} convocatorias arregladas")
+        
+        conn.commit()
+        
+        print(f"\n{'='*60}")
+        print(f"✨ TOTAL ARREGLADAS: {total_fixes} convocatorias")
+        print(f"✓ LIMPIEZA COMPLETADA")
+        print("="*60 + "\n")
+        
+        return {
+            "success": True,
+            "total_fixed": total_fixes,
+            "partidos_fixed": fixes_per_partido
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"✗ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al limpiar equipos: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()

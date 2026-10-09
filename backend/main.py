@@ -397,8 +397,6 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        print(f"DEBUG: Inscribiendo usuario {convocatoria.usuario_id} a partido {partido_id}")
-        
         # Verificar que el partido existe
         cursor.execute("SELECT id FROM partidos WHERE id = %s;", (partido_id,))
         if not cursor.fetchone():
@@ -422,16 +420,15 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
             """
             INSERT INTO convocatorias (partido_id, usuario_id, equipo, asistencia_confirmada)
             VALUES (%s, %s, %s, %s)
-            RETURNING *;
+            RETURNING id;
             """,
             (partido_id, convocatoria.usuario_id, convocatoria.equipo, convocatoria.asistencia_confirmada)
         )
-        nueva_convocatoria = cursor.fetchone()
+        result = cursor.fetchone()
+        nueva_convocatoria_id = result['id'] if isinstance(result, dict) else result[0]
         conn.commit()
         
-        print(f"DEBUG: Convocatoria creada con id {nueva_convocatoria['id']}")
-        
-        # Obtener datos completos con info del usuario
+        # Obtener datos completos con info del usuario (con mismo cursor RealDictCursor)
         cursor.execute(
             """
             SELECT c.*, u.nombre, u.email, u.posicion_habitual, u.nivel
@@ -439,7 +436,7 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
             LEFT JOIN usuarios u ON c.usuario_id = u.id
             WHERE c.id = %s;
             """,
-            (nueva_convocatoria['id'],)
+            (nueva_convocatoria_id,)
         )
         convocatoria_completa = cursor.fetchone()
         return convocatoria_completa
@@ -447,9 +444,6 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
         raise
     except Exception as e:
         conn.rollback()
-        print(f"ERROR en crear_convocatoria: {str(e)}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error al inscribir: {str(e)}")
     finally:
         cursor.close()

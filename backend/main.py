@@ -35,6 +35,8 @@ class PartidoCreate(BaseModel):
     fecha_hora: str  # ISO format: "2024-12-15T18:00:00"
     max_jugadores: Optional[int] = 10
     precio_total: Optional[float] = None
+    equipo_a_nombre: Optional[str] = "Equipo A"
+    equipo_b_nombre: Optional[str] = "Equipo B"
 
 class PartidoUpdate(BaseModel):
     estado: Optional[Literal["abierto", "completo", "finalizado", "cancelado"]] = None
@@ -267,11 +269,11 @@ def crear_partido(partido: PartidoCreate):
         # Por ahora, creador_id se asigna como 1 (en futuro, vendría del token JWT)
         cursor.execute(
             """
-            INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total, estado)
-            VALUES (%s, %s, %s, %s, %s, 'abierto')
+            INSERT INTO partidos (campo_id, creador_id, fecha_hora, max_jugadores, precio_total, equipo_a_nombre, equipo_b_nombre, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'abierto')
             RETURNING *;
             """,
-            (partido.campo_id, 1, partido.fecha_hora, partido.max_jugadores, partido.precio_total)
+            (partido.campo_id, 1, partido.fecha_hora, partido.max_jugadores, partido.precio_total, partido.equipo_a_nombre, partido.equipo_b_nombre)
         )
         nuevo_partido = cursor.fetchone()
         conn.commit()

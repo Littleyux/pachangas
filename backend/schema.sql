@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS partidos (
     fecha_hora TIMESTAMP NOT NULL,
     max_jugadores INT DEFAULT 10,
     precio_total DECIMAL(6,2),
+    equipo_a_nombre VARCHAR(100) DEFAULT 'Equipo A',
+    equipo_b_nombre VARCHAR(100) DEFAULT 'Equipo B',
     estado VARCHAR(20) DEFAULT 'abierto', -- 'abierto', 'completo', 'finalizado', 'cancelado'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

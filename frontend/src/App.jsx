@@ -28,11 +28,14 @@ function App() {
   const [partidoHora, setPartidoHora] = useState('');
   const [partidoMaxJugadores, setPartidoMaxJugadores] = useState(10);
   const [partidoPrecio, setPartidoPrecio] = useState('');
+  const [partidoEquipoA, setPartidoEquipoA] = useState('Equipo A');
+  const [partidoEquipoB, setPartidoEquipoB] = useState('Equipo B');
 
   // Convocatorias
   const [convocatoriasPorPartido, setConvocatoriasPorPartido] = useState({});
   const [partidoExpandido, setPartidoExpandido] = useState(null);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState('');
+  const [equipoSeleccionado, setEquipoSeleccionado] = useState('Equipo A');
 
   /* ========== EFFECTS ========== */
   useEffect(() => {
@@ -141,6 +144,8 @@ function App() {
         fecha_hora: fechaHoraISO,
         max_jugadores: parseInt(partidoMaxJugadores),
         precio_total: partidoPrecio ? parseFloat(partidoPrecio) : null,
+        equipo_a_nombre: partidoEquipoA,
+        equipo_b_nombre: partidoEquipoB,
       });
 
       setPartidoCampoId('');
@@ -148,6 +153,8 @@ function App() {
       setPartidoHora('');
       setPartidoMaxJugadores(10);
       setPartidoPrecio('');
+      setPartidoEquipoA('Equipo A');
+      setPartidoEquipoB('Equipo B');
       
       cargarPartidos();
     } catch (error) {
@@ -185,14 +192,19 @@ function App() {
       alert('Por favor selecciona un jugador');
       return;
     }
+    if (!equipoSeleccionado) {
+      alert('Por favor selecciona un equipo');
+      return;
+    }
 
     try {
       await API.post(`/partidos/${partidoId}/convocatorias`, {
         usuario_id: parseInt(usuarioSeleccionado),
-        equipo: 'Sin Asignar',
+        equipo: equipoSeleccionado,
         asistencia_confirmada: true,
       });
       setUsuarioSeleccionado('');
+      setEquipoSeleccionado('Equipo A');
       cargarConvocatorias(partidoId);
     } catch (error) {
       console.error('Error al inscribirse:', error);
@@ -500,6 +512,18 @@ function App() {
                   <label htmlFor="partidoMaxJugadores">Máximo de Jugadores</label>
                   <input id="partidoMaxJugadores" type="number" min="4" max="22" value={partidoMaxJugadores} onChange={(e) => setPartidoMaxJugadores(e.target.value)} />
                 </div>
+                <div className="form-group">
+                  <label htmlFor="partidoPrecio">Precio Total (opcional)</label>
+                  <input id="partidoPrecio" type="number" step="0.01" min="0" placeholder="Ej. 50.00" value={partidoPrecio} onChange={(e) => setPartidoPrecio(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="partidoEquipoA">Nombre Equipo A</label>
+                  <input id="partidoEquipoA" type="text" placeholder="Ej. Equipo A" value={partidoEquipoA} onChange={(e) => setPartidoEquipoA(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="partidoEquipoB">Nombre Equipo B</label>
+                  <input id="partidoEquipoB" type="text" placeholder="Ej. Equipo B" value={partidoEquipoB} onChange={(e) => setPartidoEquipoB(e.target.value)} />
+                </div>
               </div>
               <button type="submit" className="button button-primary mt-24">
                 <span className="icon icon-add"></span>Crear Partido
@@ -544,15 +568,19 @@ function App() {
                         </div>
 
                         <div className="form-group mb-24">
-                          <label>Selecciona un jugador:</label>
-                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'flex-end' }}>
-                            <select value={usuarioSeleccionado} onChange={(e) => setUsuarioSeleccionado(e.target.value)} style={{ flex: 1, padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                              <option value="">-- Selecciona --</option>
+                          <label>Selecciona un jugador y equipo:</label>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <select value={usuarioSeleccionado} onChange={(e) => setUsuarioSeleccionado(e.target.value)} style={{ flex: 1, minWidth: '150px', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                              <option value="">-- Jugador --</option>
                               {usuarios.map((u) => (
                                 <option key={u.id} value={u.id}>{u.nombre} - Nivel {u.nivel}</option>
                               ))}
                             </select>
-                            <button className="button button-primary" onClick={() => handleInscribirse(partido.id)}>Inscribirse</button>
+                            <select value={equipoSeleccionado} onChange={(e) => setEquipoSeleccionado(e.target.value)} style={{ flex: 1, minWidth: '120px', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                              <option value={partido.equipo_a_nombre || 'Equipo A'}>{partido.equipo_a_nombre || 'Equipo A'}</option>
+                              <option value={partido.equipo_b_nombre || 'Equipo B'}>{partido.equipo_b_nombre || 'Equipo B'}</option>
+                            </select>
+                            <button className="button button-primary" onClick={() => handleInscribirse(partido.id)} style={{ whiteSpace: 'nowrap' }}>Inscribirse</button>
                           </div>
                         </div>
 

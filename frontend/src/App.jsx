@@ -598,16 +598,64 @@ function App() {
                           {(convocatoriasPorPartido[partido.id] || []).length === 0 ? (
                             <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>Sin inscritos</p>
                           ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              {(convocatoriasPorPartido[partido.id] || []).map((conv) => (
-                                <div key={conv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                                  <div>
-                                    <div style={{ fontWeight: '500' }}>{conv.nombre}</div>
-                                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{conv.posicion_habitual} - ⭐ {conv.nivel}</div>
-                                  </div>
-                                  <button style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }} onClick={() => handleDesinscribirse(partido.id, conv.usuario_id)}>✕</button>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
+                              {/* Equipo A */}
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--primary)', marginBottom: '8px', paddingBottom: '8px', borderBottom: '2px solid var(--primary)' }}>
+                                  {partido.equipo_a_nombre || 'Equipo A'} ({(convocatoriasPorPartido[partido.id] || []).filter(c => c.equipo === (partido.equipo_a_nombre || 'Equipo A')).length})
                                 </div>
-                              ))}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  {(convocatoriasPorPartido[partido.id] || [])
+                                    .filter(c => c.equipo === (partido.equipo_a_nombre || 'Equipo A'))
+                                    .map((conv) => (
+                                      <div key={conv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ fontWeight: '500', fontSize: '14px' }}>{conv.nombre}</div>
+                                          <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{conv.posicion_habitual} • ⭐ {conv.nivel}</div>
+                                        </div>
+                                        <button
+                                          style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', padding: '4px', color: 'var(--error)' }}
+                                          onClick={() => handleDesinscribirse(partido.id, conv.usuario_id)}
+                                          title="Desapuntarse"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ))}
+                                  {(convocatoriasPorPartido[partido.id] || []).filter(c => c.equipo === (partido.equipo_a_nombre || 'Equipo A')).length === 0 && (
+                                    <p style={{ color: 'var(--text-tertiary)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>Sin jugadores</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Equipo B */}
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1E8E3E', marginBottom: '8px', paddingBottom: '8px', borderBottom: '2px solid #1E8E3E' }}>
+                                  {partido.equipo_b_nombre || 'Equipo B'} ({(convocatoriasPorPartido[partido.id] || []).filter(c => c.equipo === (partido.equipo_b_nombre || 'Equipo B')).length})
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  {(convocatoriasPorPartido[partido.id] || [])
+                                    .filter(c => c.equipo === (partido.equipo_b_nombre || 'Equipo B'))
+                                    .map((conv) => (
+                                      <div key={conv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ fontWeight: '500', fontSize: '14px' }}>{conv.nombre}</div>
+                                          <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{conv.posicion_habitual} • ⭐ {conv.nivel}</div>
+                                        </div>
+                                        <button
+                                          style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', padding: '4px', color: 'var(--error)' }}
+                                          onClick={() => handleDesinscribirse(partido.id, conv.usuario_id)}
+                                          title="Desapuntarse"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ))}
+                                  {(convocatoriasPorPartido[partido.id] || []).filter(c => c.equipo === (partido.equipo_b_nombre || 'Equipo B')).length === 0 && (
+                                    <p style={{ color: 'var(--text-tertiary)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>Sin jugadores</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>

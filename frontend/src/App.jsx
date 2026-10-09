@@ -861,8 +861,12 @@ function App() {
                   <div key={partido.id}>
                     <div className="list-item" onClick={() => abrirDetallesPartido(partido.id)} style={{ cursor: 'pointer' }}>
                       <div className="list-item-content">
-                        <div className="list-item-title">{DEPORTES[partido.tipo_deporte]?.icono} {partido.campo_nombre} - {partido.modalidad}</div>
-                        <div className="list-item-subtitle">🕐 {formatearFecha(partido.fecha_hora)}</div>
+                        <div className="list-item-title">{DEPORTES[partido.tipo_deporte]?.icono} {partido.titulo}</div>
+                        <div className="list-item-subtitle">
+                          🕐 {formatearFecha(partido.fecha_hora)}
+                          {partido.campo_nombre && <span> • 📍 {partido.campo_nombre} {partido.modalidad && `(${partido.modalidad})`}</span>}
+                          {!partido.campo_nombre && partido.ruta_origen && <span> • 🚴 {partido.ruta_origen} → {partido.ruta_destino}</span>}
+                        </div>
                         <div className="flex-gap-8 mt-16">
                           <span className="chip" style={{background: DEPORTES[partido.tipo_deporte]?.color || '#999', color: 'white', fontSize: '12px'}}>
                             {DEPORTES[partido.tipo_deporte]?.nombre || partido.tipo_deporte}

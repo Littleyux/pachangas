@@ -394,28 +394,47 @@ def obtener_convocatorias(partido_id: int):
 # Endpoint: Inscribir usuario a un partido
 @app.post("/api/partidos/{partido_id}/convocatorias", status_code=201)
 def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
+    print(f"\n{'='*60}")
+    print(f"[CREATE CONVOCATORIA] Inicio - Partido: {partido_id}, Usuario: {convocatoria.usuario_id}")
+    print(f"{'='*60}")
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        print(f"[1] Conexión abierta, cursor type: {type(cursor)}")
+        
         # Verificar que el partido existe
+        print(f"[2] Verificando que partido {partido_id} existe...")
         cursor.execute("SELECT id FROM partidos WHERE id = %s;", (partido_id,))
-        if not cursor.fetchone():
+        partido_check = cursor.fetchone()
+        print(f"[2] Resultado: {partido_check}")
+        if not partido_check:
+            print(f"[ERROR] Partido {partido_id} no encontrado")
             raise HTTPException(status_code=404, detail="Partido no encontrado")
         
         # Verificar que el usuario existe
+        print(f"[3] Verificando que usuario {convocatoria.usuario_id} existe...")
         cursor.execute("SELECT id FROM usuarios WHERE id = %s;", (convocatoria.usuario_id,))
-        if not cursor.fetchone():
+        usuario_check = cursor.fetchone()
+        print(f"[3] Resultado: {usuario_check}")
+        if not usuario_check:
+            print(f"[ERROR] Usuario {convocatoria.usuario_id} no encontrado")
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
         
         # Verificar que el usuario no está ya inscrito
+        print(f"[4] Verificando duplicado...")
         cursor.execute(
             "SELECT id FROM convocatorias WHERE partido_id = %s AND usuario_id = %s;",
             (partido_id, convocatoria.usuario_id)
         )
-        if cursor.fetchone():
+        duplicado = cursor.fetchone()
+        print(f"[4] Resultado: {duplicado}")
+        if duplicado:
+            print(f"[ERROR] Usuario ya inscrito")
             raise HTTPException(status_code=400, detail="El usuario ya está inscrito en este partido")
         
         # Insertar inscripción
+        print(f"[5] Insertando convocatoria...")
         cursor.execute(
             """
             INSERT INTO convocatorias (partido_id, usuario_id, equipo, asistencia_confirmada)
@@ -425,10 +444,16 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
             (partido_id, convocatoria.usuario_id, convocatoria.equipo, convocatoria.asistencia_confirmada)
         )
         result = cursor.fetchone()
+        print(f"[5] Result type: {type(result)}, Value: {result}")
+        
         nueva_convocatoria_id = result['id'] if isinstance(result, dict) else result[0]
+        print(f"[5] Nueva convocatoria ID: {nueva_convocatoria_id}")
+        
         conn.commit()
+        print(f"[6] Commit realizado")
         
         # Obtener datos completos con info del usuario (con mismo cursor RealDictCursor)
+        print(f"[7] Obteniendo datos completos...")
         cursor.execute(
             """
             SELECT c.*, u.nombre, u.email, u.posicion_habitual, u.nivel
@@ -439,15 +464,26 @@ def crear_convocatoria(partido_id: int, convocatoria: ConvocatoriaCreate):
             (nueva_convocatoria_id,)
         )
         convocatoria_completa = cursor.fetchone()
+        print(f"[7] Datos completos obtenidos: {convocatoria_completa}")
+        
+        print(f"[SUCCESS] Convocatoria creada exitosamente")
+        print(f"{'='*60}\n")
         return convocatoria_completa
+        
     except HTTPException:
+        print(f"[HTTPException] Lanzada")
         raise
     except Exception as e:
         conn.rollback()
+        print(f"[EXCEPTION] Error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        print(f"{'='*60}\n")
         raise HTTPException(status_code=500, detail=f"Error al inscribir: {str(e)}")
     finally:
         cursor.close()
         conn.close()
+        print(f"[CLEANUP] Conexión cerrada")
 
 # Endpoint: Cancelar inscripción de usuario a un partido
 @app.delete("/api/partidos/{partido_id}/convocatorias/{usuario_id}", status_code=204)

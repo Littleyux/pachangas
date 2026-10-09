@@ -209,8 +209,12 @@ function App() {
     try {
       await API.post(`/partidos/${partidoId}/convocatorias`, payload);
       console.log('[DEBUG] Inscripción exitosa');
+      
+      // Resetea los selectores para la próxima inscripción
+      const partido = partidos.find(p => p.id === partidoId);
       setUsuarioSeleccionado('');
-      setEquipoSeleccionado('Equipo A');
+      setEquipoSeleccionado(partido?.equipo_a_nombre || 'Equipo A');
+      
       cargarConvocatorias(partidoId);
     } catch (error) {
       console.error('[ERROR] Error al inscribirse:', error);
@@ -239,6 +243,15 @@ function App() {
   const abrirDetallesPartido = (partidoId) => {
     console.log('Abriendo detalles del partido:', partidoId);
     setPartidoExpandido(partidoId);
+    
+    // Encuentra el partido para obtener el nombre del equipo A
+    const partido = partidos.find(p => p.id === partidoId);
+    if (partido) {
+      // Resetea el equipo seleccionado al nombre del equipo A del partido
+      setEquipoSeleccionado(partido.equipo_a_nombre || 'Equipo A');
+      console.log('[DEBUG] Equipo A del partido:', partido.equipo_a_nombre);
+    }
+    
     if (!convocatoriasPorPartido[partidoId]) {
       cargarConvocatorias(partidoId);
     }
